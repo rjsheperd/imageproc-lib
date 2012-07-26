@@ -40,4 +40,30 @@
 * Notes:
 *  - This module uses an SPI port for communicating with the chip
 */
+#ifndef __MPU_SPI_H
+#define __MPU_SPI_H
 
+// Setup device
+void mpuSetup(void);
+
+// Run calibration routine
+void mpuRunCalib(unsigned int count);
+
+// Set sleep mode
+void mpuSetSleep(unsigned char mode);
+
+// 3 ints
+void mpuGetGyro(int* buff);
+// 3 ints
+void mpuGetXl(int* buff);
+// 1 int
+void mpuGetTemp(int* buff);
+
+float mpuGetGyroScale(void);
+float mpuGetXlScale(void);
+float mpuGetTempScale(void);
+
+// Read data from MPU
+void mpuUpdate(void);
+
+#endif
