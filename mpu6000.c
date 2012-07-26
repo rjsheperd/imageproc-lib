@@ -42,11 +42,16 @@
 */
 
 #include "mpu6000.h"
-
+#include "ports.h"
 #include "spi.h"
 #include "spi_controller.h"
 #include "utils.h"
+
 #include <string.h>
+
+#define SPI_CON1bits        (SPI2CON1bits)
+#define SPI_CON2            (SPI2CON2)
+#define SPI_STATbits        (SPI2STATbits)  
 
 // Registers
 #define MPU_REG_RATEDIV		(25)
@@ -321,66 +326,34 @@ static inline unsigned char receiveByte(void) {
 }
 
 /*****************************************************************************
-* Function Name : sendNACK
-* Description   : Send NACK to mpuscope
+* Function Name : setupSPI
+* Description   : Setup SPI for mpuscope
 * Parameters    : None
 * Return Value  : None
 *****************************************************************************/
-static inline void sendNACK(void){
-    NotAckI2C2();
-    while(I2C2CONbits.ACKEN);
-}
+static inline void setupSPI(void) {
 
-/*****************************************************************************
-* Function Name : startTx
-* Description   : Start I2C transmission
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-static inline void startTx(void){
-    StartI2C2();
-    while(I2C2CONbits.SEN);
-}
+	// SPI2CON1 Register Settings
+    SPI_CON1bits.MSTEN = 1; // Master mode Enabled
+    SPI_CON1bits.DISSCK = 0; // Internal Serial Clock is Enabled
+    SPI_CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
+    SPI_CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
+    SPI_CON1bits.SMP = 0; // Input data is sampled at middle of data output time
+    SPI_CON1bits.SSEN = 0; // SSx pin is used
+    SPI_CON1bits.CKE = 1; // Serial output data changes on transition
+                        // from active clock trx_state to idle clock trx_state
+    SPI_CON1bits.CKP = 0; // Idle trx_state for clock is a low level;
+                            // active trx_state is a high level
 
-/*****************************************************************************
-* Function Name : endTx
-* Description   : End I2C transmission
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-static inline void endTx(void){
-    StopI2C2();
-    while(I2C2CONbits.PEN);
-}
-
-/*****************************************************************************
-* Function Name : setupI2C
-* Description   : Setup I2C for mpuscope
-* Parameters    : None
-* Return Value  : None
-*****************************************************************************/
-static inline void setupI2C(void) {
-    unsigned int SPIConValue1, SPIConValue2, SPIConValue3;
-    SPIConValue1 = NULL;
-    
-    SPIConValue2 = 
-    	ENABLE_SCK_PIN // Internal SPI clock enabled
-    	& ENABLE_SDO_PIN // CSDO pin is used by module
-    	& SPI_MODE16_ON // Comm is byte wide   	
-    	& SPI_SMP_???? // 
-    	& SPI_CKE_ON // Tx happens on active to idle clock
-    	& SLAVE_ENABLE_ON // Slave select enabled
-    	& CLK_POL_ACTIVE_LOW // Idle state for clk is high, active is low
-    	& MASTER_ENABLE_ON // Master mode
-    	& SEC_PRESCAL_3_1 // Divide clock by 3
-    	& PRI_PRESCAL_16_1; // Divide clock by 16
-    	
-    SPIConValue3 =     	
-    	& FRAME_ENABLE_ON // Frame SPI support enable
-    	& FRAME_SYNC_OUTPUT // Frame sync pulse Output (master) 
-    	& FRAME_POL_ACTIVE_LOW // Frame sync is active-low
-    	& FRAME_SYNC_EDGE_???? // coincides with first bit
-    	& FIFO_BUFFER_DISABLE; // FIFO buffer disabled
-
-    OpenSPI2(SPIConValue1, SPIConValue2, SPIConVale3);
+    // Set up SCK frequency of 0.833Mhz for 40 MIPS
+    SPI_CON1bits.SPRE = 0b100; // Secondary prescale    3:1
+    SPI_CON1bits.PPRE = 0b01; // Primary prescale       16:1
+	
+	// SPI2CON2 Register Settings
+	SPI_CON2 = 0x0000;
+	
+	// SPI2STAT Register Settings
+    SPI_STATbits.SPISIDL = 1; // Discontinue module when device enters idle mode
+    SPI_STATbits.SPIROV = 0; // Clear Overflow
+    SPI_STATbits.SPIEN = 1; // Enable SPI module
 }
