@@ -32,7 +32,7 @@
 * by Richard J. Sheperd
 * based on MPU-6050 Driver by Humphrey Hu
 *
-* v 0.1
+* v alpha
 *
 * Revisions:
 * 

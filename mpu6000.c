@@ -32,7 +32,7 @@
 * by Richard J. Sheperd
 * based on MPU-6050 Driver by Humphrey Hu
 *
-* v 0.1
+* v alpha
 *
 * Revisions:
 * 
@@ -41,9 +41,10 @@
 *  - This module uses an SPI port for communicating with the chip
 */
 
+#include "mpu6000.h"
 
 #include "spi.h"
-#include "mpu6000.h"
+#include "spi_controller.h"
 #include "utils.h"
 #include <string.h>
 
@@ -70,6 +71,10 @@
 #define MPU_REG_FIFOCNTL	(115)
 #define MPU_REG_FIFORW		(116)
 #define MPU_REG_WHOAMI		(117)
+
+// Read/Write Access
+#define READ				(128) 
+#define WRITE				(0)
 
 // More parameters
 #define GYRO_SCALE_BASE		(0.000133231241)	// Lowest gyro range (250 degrees/sec)
@@ -105,14 +110,15 @@ static struct {
 static void writeReg(unsigned char regaddr, unsigned char data );
 static unsigned char readReg(unsigned char regaddr);
 
+//TODO: Implement
 static inline unsigned int readString(unsigned int length, unsigned char * data,
 unsigned int data_wait);
+//TODO: Implement
 static inline unsigned int writeString(unsigned int length, unsigned char* data);								   
+//TODO: Implement
 static inline void sendByte( unsigned char byte );
+//TODO: Implement
 static inline unsigned char receiveByte(void);
-static inline void sendNACK(void);
-static inline void startTx(void);
-static inline void endTx(void);
 static inline void setupI2C(void);
 
 /*-----------------------------------------------------------------------------
@@ -123,8 +129,8 @@ static inline void setupI2C(void);
 
 void mpuSetup(void) {
     
-    // setup I2C port
-    setupI2C();
+    // setup SPI port
+    setupSPI();
 
     unsigned char reg;
 
@@ -247,11 +253,10 @@ void mpuUpdate(void) {
 * Return Value  : None
 *****************************************************************************/
 static void writeReg(unsigned char regaddr, unsigned char data ){
-    startTx();
-    sendByte(MPU_ADDR_WR);
-    sendByte(regaddr);
-    sendByte(data);
-    endTx();
+    spic2BeginTransaction();
+    spic2Transmit(regaddr);
+    spic2Transmit(data);
+    spic2EndTransaction();
 }
 
 /*****************************************************************************
@@ -263,16 +268,11 @@ static void writeReg(unsigned char regaddr, unsigned char data ){
 static unsigned char readReg(unsigned char regaddr) {
     unsigned char c;
     
-    startTx();
-    sendByte(MPU_ADDR_WR);
-    sendByte(regaddr);
-    endTx();
+    spic2BeginTransaction();
+    spic2Transmit(regaddr | READ);
+    c = spic2Recieve();
+    spic2EndTransaction();
     
-    startTx();
-    sendByte(MPU_ADDR_RD);
-    c = receiveByte();
-    sendNACK();
-    endTx();
     return c;
 }
 
@@ -286,7 +286,7 @@ static unsigned char readReg(unsigned char regaddr) {
 *****************************************************************************/
 static inline unsigned int readString(unsigned int length, unsigned char * data,
 unsigned int data_wait) {
-    return MastergetsI2C2(length, data, data_wait);
+    return NULL;
 }
 
 /*****************************************************************************
@@ -297,10 +297,7 @@ unsigned int data_wait) {
 * Return Value  : Error codes: -3 if collision, 0 if successful
 *****************************************************************************/
 static inline unsigned int writeString(unsigned int length, unsigned char * data) {
-    unsigned char buff[length + 1];
-    memcpy(buff, data, length);
-    buff[length] = '\0';		// Have to copy in order to add null character to end of data
-    return MasterputsI2C2(buff);
+	return NULL;
 }
 
 
@@ -311,9 +308,6 @@ static inline unsigned int writeString(unsigned int length, unsigned char * data
 * Return Value  : None
 *****************************************************************************/
 static inline void sendByte( unsigned char byte ) {
-    MasterWriteI2C2(byte);
-    while(I2C2STATbits.TRSTAT);
-    while(I2C2STATbits.ACKSTAT);
 }
 
 /*****************************************************************************
@@ -323,7 +317,7 @@ static inline void sendByte( unsigned char byte ) {
 * Return Value  : None
 *****************************************************************************/
 static inline unsigned char receiveByte(void) {
-    return MasterReadI2C2();
+    return NULL;
 }
 
 /*****************************************************************************
@@ -366,15 +360,27 @@ static inline void endTx(void){
 * Return Value  : None
 *****************************************************************************/
 static inline void setupI2C(void) {
-    unsigned int I2C2CONvalue, I2C2BRGvalue;
-    I2C2CONvalue = I2C2_ON & I2C2_IDLE_CON & I2C2_CLK_HLD &
-    I2C2_IPMI_DIS & I2C2_7BIT_ADD & I2C2_SLW_DIS &
-    I2C2_SM_DIS & I2C2_GCALL_DIS & I2C2_STR_DIS &
-    I2C2_NACK & I2C2_ACK_DIS & I2C2_RCV_DIS &
-    I2C2_STOP_DIS & I2C2_RESTART_DIS & I2C2_START_DIS;
+    unsigned int SPIConValue1, SPIConValue2, SPIConValue3;
+    SPIConValue1 = NULL;
+    
+    SPIConValue2 = 
+    	ENABLE_SCK_PIN // Internal SPI clock enabled
+    	& ENABLE_SDO_PIN // CSDO pin is used by module
+    	& SPI_MODE16_ON // Comm is byte wide   	
+    	& SPI_SMP_???? // 
+    	& SPI_CKE_ON // Tx happens on active to idle clock
+    	& SLAVE_ENABLE_ON // Slave select enabled
+    	& CLK_POL_ACTIVE_LOW // Idle state for clk is high, active is low
+    	& MASTER_ENABLE_ON // Master mode
+    	& SEC_PRESCAL_3_1 // Divide clock by 3
+    	& PRI_PRESCAL_16_1; // Divide clock by 16
+    	
+    SPIConValue3 =     	
+    	& FRAME_ENABLE_ON // Frame SPI support enable
+    	& FRAME_SYNC_OUTPUT // Frame sync pulse Output (master) 
+    	& FRAME_POL_ACTIVE_LOW // Frame sync is active-low
+    	& FRAME_SYNC_EDGE_???? // coincides with first bit
+    	& FIFO_BUFFER_DISABLE; // FIFO buffer disabled
 
-    // BRG = Fcy(1/Fscl - 1/10000000)-1, Fscl = 400KHz 	
-    I2C2BRGvalue = 95; 
-    OpenI2C2(I2C2CONvalue, I2C2BRGvalue);
-    IdleI2C2();
+    OpenSPI2(SPIConValue1, SPIConValue2, SPIConVale3);
 }
