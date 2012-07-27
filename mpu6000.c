@@ -114,6 +114,7 @@ static struct {
 -----------------------------------------------------------------------------*/
 static void writeReg(unsigned char regaddr, unsigned char data );
 static unsigned char readReg(unsigned char regaddr);
+static inline void setupI2C(void);
 
 //TODO: Implement
 static inline unsigned int readString(unsigned int length, unsigned char * data,
@@ -124,7 +125,7 @@ static inline unsigned int writeString(unsigned int length, unsigned char* data)
 static inline void sendByte( unsigned char byte );
 //TODO: Implement
 static inline unsigned char receiveByte(void);
-static inline void setupI2C(void);
+
 
 /*-----------------------------------------------------------------------------
 *          Public functions
@@ -283,7 +284,7 @@ static unsigned char readReg(unsigned char regaddr) {
 
 /*****************************************************************************
 * Function Name : readString
-* Description   : It reads predetermined data string length from the I2C bus.
+* Description   : It reads predetermined data string length from the SPI bus.
 * Parameters    : length is the string length to read
 *                 data is the storage for received mpu data
 *                 data_wait is the timeout value
@@ -291,18 +292,18 @@ static unsigned char readReg(unsigned char regaddr) {
 *****************************************************************************/
 static inline unsigned int readString(unsigned int length, unsigned char * data,
 unsigned int data_wait) {
-    return NULL;
+    return getsSPI2(length, data, data_wait);
 }
 
 /*****************************************************************************
 * Function Name : mpuWriteString
-* Description   : Writes a buffer of data to the I2C bus
+* Description   : Writes a buffer of data to the SPI bus
 * Parameters    : length is the string length to write
 *                 data is a pointer to buffer containing data to write
 * Return Value  : Error codes: -3 if collision, 0 if successful
 *****************************************************************************/
 static inline unsigned int writeString(unsigned int length, unsigned char * data) {
-	return NULL;
+	return putsSPI2(length, data);
 }
 
 
@@ -313,6 +314,7 @@ static inline unsigned int writeString(unsigned int length, unsigned char * data
 * Return Value  : None
 *****************************************************************************/
 static inline void sendByte( unsigned char byte ) {
+
 }
 
 /*****************************************************************************
