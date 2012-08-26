@@ -141,7 +141,7 @@ void mpuSetup(void) {
     unsigned char reg;
 
     writeReg(MPU_REG_PMGT1, 0x03);				// Set clock to PLL Z Gyro	
-    reg = readReg(MPU_REG_PMGT1);
+    reg = readReg(MPU_REG_PMGT1);		// Some sort of check here? =============== HH
 
     writeReg(MPU_REG_RATEDIV, DEFAULT_RATEDIV);	// Set rate divider
     
@@ -238,7 +238,7 @@ void mpuUpdate(void) {
     // Order is now GYRO[6] TEMP[2] XL[6]
     // Copy into buffers
     memcpy(mpu_data.gyro_data, rev, 6);
-    memcpy(&mpu_data.temp, rev + 6, 2);
+    memcpy(mpu_data.temp, rev + 6, 2); // Why only one & here? ==================
     memcpy(mpu_data.xl_data, rev + 8, 6);
     
 }
@@ -259,7 +259,7 @@ void mpuUpdate(void) {
 * Return Value  : None
 *****************************************************************************/
 static void writeReg(unsigned char regaddr, unsigned char data ){
-    spic2BeginTransaction();
+    spic2BeginTransaction(); // Its usually useful to return the value read too ==========
     spic2Transmit(regaddr);
     spic2Transmit(data);
     spic2EndTransaction();
