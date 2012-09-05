@@ -81,6 +81,11 @@
 #define READ				(128) 
 #define WRITE				(0)
 
+// Default configuration values
+#define DEF_FCY				(8000)		// Gyro clock output
+#define XL_MAX_FCY			(1000)		// Accelerometer output rate
+#define DEFAULT_RATEDIV		(7)		    // For sample rate of 1000
+
 // More parameters
 #define GYRO_SCALE_BASE		(0.000133231241)	// Lowest gyro range (250 degrees/sec)
 #define XL_SCALE_BASE		(5.98550415E-4)		// Lowest accelerometer range (+-2 g)
@@ -142,6 +147,7 @@ void mpuSetup(void) {
 
     writeReg(MPU_REG_PMGT1, 0x03);				// Set clock to PLL Z Gyro	
     reg = readReg(MPU_REG_PMGT1);		// Some sort of check here? =============== HH
+    
 
     writeReg(MPU_REG_RATEDIV, DEFAULT_RATEDIV);	// Set rate divider
     
@@ -215,6 +221,7 @@ float mpuGetTempScale(void) {
     return mpu_params.temp_scale;
 }
 
+/*
 void mpuUpdate(void) {
 
     unsigned char buff[UPDATE_SIZE], rev[UPDATE_SIZE], i;
@@ -238,10 +245,12 @@ void mpuUpdate(void) {
     // Order is now GYRO[6] TEMP[2] XL[6]
     // Copy into buffers
     memcpy(mpu_data.gyro_data, rev, 6);
-    memcpy(mpu_data.temp, rev + 6, 2); // Why only one & here? ==================
+    memcpy(mpu_data.temp, rev + 6, 2);
     memcpy(mpu_data.xl_data, rev + 8, 6);
     
 }
+
+*/
 
 
 /*-----------------------------------------------------------------------------
@@ -314,6 +323,7 @@ static inline unsigned int writeString(unsigned int length, unsigned char * data
 * Return Value  : None
 *****************************************************************************/
 static inline void sendByte( unsigned char byte ) {
+	
 
 }
 
